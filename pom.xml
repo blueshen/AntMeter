@@ -3,7 +3,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>cn.shenyanchao</groupId>
-    <artifactId>jmeter-autoload-tools</artifactId>
+    <artifactId>AntMeter</artifactId>
     <version>1.0.0</version>
     <packaging>jar</packaging>
 
