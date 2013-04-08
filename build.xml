@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--<property name="jmeter-home" location="/home/work/local/apache-jmeter-2.8/" />  -->
+ <project default="all">
+<!-- Define your Jmeter Home & Your Report Title & Interval Time Between Test-->
+<property name="report.title" value="WebLoad Test Report"/>
+<property name="jmeter-home" location="/home/work/local/apache-jmeter-2.8/" />
+<property name = "interval-time-in-seconds" value ="60"/>
+<!-- default path config, you can modify for your own requirement;Generally, you do not need to modify -->
+<property environment="env" />
+<property name="runremote" value="false"/>
+<property name="results.jtl" value="results/jtl"/>
+<property name="results.html" value ="results/html"/>
+<property name="jmxs.dir"  value= "jmxs"/>
+<!--  Diffrent version of Jmeter has its own ant-jmeter.jar,Please input the right versioin -->
+<path id="ant.jmeter.classpath">
+    <pathelement location="${jmeter-home}/extras/ant-jmeter-1.1.1.jar" />
+</path>
+<taskdef name="jmeter"
+         classname="org.programmerplanet.ant.taskdefs.jmeter.JMeterTask"
+         classpathref="ant.jmeter.classpath" />
+<!-- just to support foreach by ant -->
+<taskdef resource="net/sf/antcontrib/antcontrib.properties" >
+    <classpath>
+        <pathelement location="./libs/ant-contrib-20020829.jar" />
+    </classpath>
+</taskdef>
+
+<!-- use this config to generate html report; if not, may not display Min/Max Time in html-->
+<path id="xslt.classpath">
+    <fileset dir="./libs" includes="xalan-2.7.1.jar"/>
+    <fileset dir="./libs" includes="serializer-2.9.1.jar"/>
+</path>
+
+<target name="clean">
+    <delete dir="results" />
+    <delete file="jmeter.log" />
+    <mkdir dir="${results.jtl}" />
+    <mkdir dir="${results.html}" />
+</target>
+
+<target name="all-test" depends="clean">
+    <foreach  param="jmxfile" target="test" >
+        <fileset dir="${jmxs.dir}">
+            <include name="*.jmx" />
+        </fileset>
+    </foreach>
+</target>
+
+<target name="test" >
+    <basename property="jmx.filename" file="${jmxfile}" suffix=".jmx"/>
+    <echo message="---------- Processing ${jmxfile}  -----------"/>
+    <jmeter jmeterhome="${jmeter-home}" resultlogdir="${results.jtl}" runremote="${runremote}" resultlog="${jmx.filename}.jtl"
+            testplan="${jmxs.dir}/${jmx.filename}.jmx">
+        <!--
+          <testplans dir="${jmxs.dir}" includes="${jmx.filename}.jmx" />
+        -->
+        <jvmarg value="-Xincgc"/>
+        <jvmarg value="-Xms256m"/>
+        <jvmarg value="-Xmx512m"/>
+
+    </jmeter>
+    <sleep seconds="20"></sleep>
+    <!--Generate html report-->
+    <tstamp><format property="report.datestamp" pattern="yyyy-MM-dd HH:mm:ss"/></tstamp>
+    <xslt  in="${results.jtl}/${jmx.filename}.jtl"  out="${results.html}/${jmx.filename}.html"  classpathref="xslt.classpath"
+           style="${jmeter-home}/extras/jmeter-results-report_21.xsl" >
+        <param name="dateReport" expression="${report.datestamp}"/>
+        <param name="showData" expression="n"/>
+        <param name="titleReport" expression="${report.title}:[${jmx.filename}]"/>
+    </xslt>
+
+    <echo message="Sleep ${interval-time-in-seconds} Seconds, and then start next Test; Please waiting ......"/>
+    <sleep seconds="${interval-time-in-seconds}"></sleep>
+</target>
+
+<target name="copy-images" depends="all-test">
+    <copy file="${jmeter-home}/extras/expand.png" tofile="${results.html}/expand.png"/>
+    <copy file="${jmeter-home}/extras/collapse.png" tofile="${results.html}/collapse.png"/>
+</target>
+
+<target name="all" depends="all-test, copy-images" />
+</project>
